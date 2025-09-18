@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Food Logo Loader Preview</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root { color-scheme: light; }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+        background: #fff;
+      }
+      .page { display: grid; gap: 16px; place-items: center; padding: 24px; }
+      .panel {
+        display: grid; gap: 12px; align-items: center;
+        width: min(680px, 92vw); padding: 16px;
+        border: 1px solid #e7e7e7; border-radius: 12px; background: #fafafa;
+      }
+      .controls { display: grid; gap: 10px; }
+      .control-row {
+        display: grid; grid-template-columns: 140px 1fr auto;
+        gap: 10px; align-items: center;
+      }
+      .preview { display: grid; place-items: center; padding: 24px; }
+
+      /* Loader styles */
+      .logo-loader { position: relative; display: inline-grid; place-items: center; isolation: isolate; }
+      .logo-loader__img {
+        width: 70%; max-width: 100%; height: auto; object-fit: contain;
+        filter: drop-shadow(0 2px 2px rgba(0,0,0,0.04));
+        animation: logo-pulse 1.6s ease-in-out infinite; z-index: 1; will-change: transform, opacity;
+      }
+      .logo-loader__svg { position: absolute; inset: 0; pointer-events: none; }
+      .logo-loader__spinner { transform-origin: center; animation: rotate 1.2s linear infinite; will-change: transform; }
+      @keyframes rotate { to { transform: rotate(360deg); } }
+      @keyframes logo-pulse { 0%,100% { transform: scale(1); opacity: .95; } 50% { transform: scale(1.04); opacity: 1; } }
+      @media (prefers-reduced-motion: reduce) {
+        .logo-loader__spinner, .logo-loader__img { animation: none !important; }
+      }
+
+      .hint { font-size: 12px; color: #666; }
+      .color { inline-size: 40px; block-size: 28px; padding: 0; border: 1px solid #ddd; border-radius: 6px; background: none; }
+      .range { accent-color: #57C84D; }
+      .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; background: #eaf8eb; color: #2a7a2f; font-size: 12px; border: 1px solid #d9f0dc; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <!-- React 18 UMD + Babel Standalone -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel" data-presets="react">
+      const { useState, useEffect } = React;
+
+      function LogoLoader({
+        src,
+        alt = "Loading",
+        size = 220,
+        ringWidth = 10,
+        speedSec = 1.1,
+        trackColor = "rgba(87, 200, 77, 0.18)",
+        arcColor = "#57C84D",
+        className = "",
+        ariaLabel = "Loading…",
+      }) {
+        const radius = size / 2 - ringWidth / 2;
+        const circumference = 2 * Math.PI * radius;
+        const arcLength = circumference * 0.72;
+
+        return (
+          <div
+            className={`logo-loader ${className}`}
+            role="status"
+            aria-label={ariaLabel}
+            style={{ width: size, height: size }}
+          >
+            <img className="logo-loader__img" src={src} alt={alt} />
+            <svg className="logo-loader__svg" width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
+              <circle
+                cx={size / 2}
+                cy={size / 2}
+                r={radius}
+                stroke={trackColor}
+                strokeWidth={ringWidth}
+                fill="none"
+              />
+              <g className="logo-loader__spinner" style={{ animationDuration: `${speedSec}s` }}>
+                <circle
+                  cx={size / 2}
+                  cy={size / 2}
+                  r={radius}
+                  stroke={arcColor}
+                  strokeWidth={ringWidth}
+                  strokeLinecap="round"
+                  fill="none"
+                  strokeDasharray={`${arcLength} ${circumference}`}
+                  strokeDashoffset="0"
+                />
+              </g>
+            </svg>
+          </div>
+        );
+      }
+
+      function App() {
+        // Default tries "logo.png" in repo. If not found, use a placeholder.
+        const [src, setSrc] = useState("logo.png");
+        const [size, setSize] = useState(220);
+        const [ringWidth, setRingWidth] = useState(10);
+        const [speed, setSpeed] = useState(1.1);
+        const [arcColor, setArcColor] = useState("#57C84D");
+        const [trackColor, setTrackColor] = useState("rgba(87, 200, 77, 0.18)");
+
+        useEffect(() => {
+          const test = new Image();
+          test.src = "logo.png";
+          test.onload = () => setSrc("logo.png");
+          test.onerror = () =>
+            setSrc("https://dummyimage.com/500x500/ffffff/57c84d.png&text=Your+Logo");
+        }, []);
+
+        useEffect(() => () => {
+          if (src?.startsWith?.("blob:")) URL.revokeObjectURL(src);
+        }, [src]);
+
+        const onPickFile = (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          if (src?.startsWith?.("blob:")) URL.revokeObjectURL(src);
+          const url = URL.createObjectURL(file);
+          setSrc(url);
+        };
+
+        return (
+          <main className="page">
+            <div className="panel">
+              <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between" }}>
+                <h2 style={{ margin: 0, fontWeight: 600 }}>Food Logo Loader Preview</h2>
+                <span className="badge">React + SVG</span>
+              </div>
+
+              <div className="controls">
+                <div className="control-row">
+                  <label>Logo image</label>
+                  <input type="file" accept="image/*" onChange={onPickFile} />
+                  <span className="hint">Pick your logo (PNG/SVG)</span>
+                </div>
+
+                <div className="control-row">
+                  <label>Size: {size}px</label>
+                  <input className="range" type="range" min="120" max="360" step="2" value={size} onChange={(e)=>setSize(+e.target.value)} />
+                  <span />
+                </div>
+
+                <div className="control-row">
+                  <label>Ring width: {ringWidth}px</label>
+                  <input className="range" type="range" min="4" max="18" step="1" value={ringWidth} onChange={(e)=>setRingWidth(+e.target.value)} />
+                  <span />
+                </div>
+
+                <div className="control-row">
+                  <label>Speed: {speed.toFixed(2)}s/rotation</label>
+                  <input className="range" type="range" min="0.6" max="2.4" step="0.05" value={speed} onChange={(e)=>setSpeed(+e.target.value)} />
+                  <span />
+                </div>
+
+                <div className="control-row">
+                  <label>Arc color</label>
+                  <input className="color" type="color" value={arcColor} onChange={(e)=>setArcColor(e.target.value)} />
+                  <span />
+                </div>
+
+                <div className="control-row">
+                  <label>Track color</label>
+                  <input className="color" type="color" value={trackColor} onChange={(e)=>setTrackColor(e.target.value)} />
+                  <span />
+                </div>
+              </div>
+
+              <div className="preview">
+                <LogoLoader
+                  src={src}
+                  alt="Logo loading"
+                  size={size}
+                  ringWidth={ringWidth}
+                  speedSec={speed}
+                  arcColor={arcColor}
+                  trackColor={trackColor}
+                />
+              </div>
+
+              <p className="hint">
+                Tip: Add a file named <b>logo.png</b> to the repo root, or use the file picker above.
+              </p>
+            </div>
+          </main>
+        );
+      }
+
+      ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    </script>
+  </body>
+</html>
